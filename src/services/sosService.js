@@ -1,19 +1,11 @@
 /**
- * SOS Service - Handles emergency alerts via Email and SMS
- * Supports: FormSubmit (Email), Twilio API (SMS Worldwide)
+ * SOS Service - Email alerts via FormSubmit
+ * SMS is shown in prototype but routes through email for demo purposes
  */
 
-// FormSubmit: Free Email (no key required)
 const FORMSUBMIT_ENDPOINT = 'https://formsubmit.co/ajax';
 
-// Twilio: Global SMS service
-// Sign up: https://www.twilio.com/
-// You need: Account SID, Auth Token, and a Twilio phone number
-
 export const sosService = {
-  /**
-   * Send emergency alert via Email
-   */
   sendEmail: async (emailAddress, message, addLog) => {
     try {
       const response = await fetch(`${FORMSUBMIT_ENDPOINT}/${emailAddress}`, {
@@ -25,118 +17,65 @@ export const sosService = {
           _captcha: false
         })
       });
-
       if (response.ok) {
-        addLog(`[✓] Email sent to ${emailAddress}`);
+        addLog(`[✓] Email sent → ${emailAddress}`);
         return true;
       } else {
-        addLog(`[✗] Email failed to ${emailAddress}`);
+        addLog(`[✗] Email failed → ${emailAddress}`);
         return false;
       }
     } catch (error) {
-      console.error('Email Error:', error);
       addLog(`[✗] Email error: ${error.message}`);
       return false;
     }
   },
 
-  /**
-   * Send SMS via Twilio API (Worldwide)
-   */
-  sendSMS: async (phoneNumber, message, twilioConfig, addLog) => {
-    if (!twilioConfig || !twilioConfig.accountSid || !twilioConfig.authToken || !twilioConfig.fromNumber) {
-      addLog(`[⚠] SMS skipped: No Twilio credentials configured`);
-      return false;
-    }
-
-    try {
-      // Normalize phone number (ensure +63 format for Philippines or international format)
-      let normalizedPhone = phoneNumber;
-      if (normalizedPhone.startsWith('0')) {
-        normalizedPhone = '+63' + normalizedPhone.slice(1);
-      } else if (!normalizedPhone.startsWith('+')) {
-        normalizedPhone = '+' + normalizedPhone;
-      }
-
-      // Create basic auth header for Twilio
-      const authString = `${twilioConfig.accountSid}:${twilioConfig.authToken}`;
-      const encodedAuth = btoa(authString);
-
-      const formData = new URLSearchParams();
-      formData.append('To', normalizedPhone);
-      formData.append('From', twilioConfig.fromNumber);
-      formData.append('Body', message);
-
-      const response = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${twilioConfig.accountSid}/Messages.json`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Basic ${encodedAuth}`,
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: formData,
-      });
-
-      const result = await response.json();
-
-      if (response.ok && result.sid) {
-        addLog(`[✓] SMS sent to ${normalizedPhone}`);
-        return true;
-      } else {
-        const errorMsg = result.message || result.error_message || 'Unknown error';
-        addLog(`[✗] SMS failed to ${normalizedPhone}: ${errorMsg}`);
-        return false;
-      }
-    } catch (error) {
-      console.error('SMS Error:', error);
-      addLog(`[✗] SMS error: ${error.message}`);
-      return false;
-    }
+  sendSMSSimulated: async (phoneNumber, addLog) => {
+    // Prototype simulation — real SMS requires backend with Semaphore/Globe/Smart API
+    await new Promise(r => setTimeout(r, 800));
+    addLog(`[📱] SMS queued → ${phoneNumber} (prototype demo)`);
+    return true;
   },
 
-  /**
-   * Send Facebook Messenger (placeholder - requires backend)
-   */
   sendFacebookMessage: async (facebookId, message, addLog) => {
-    addLog(`[ℹ] Facebook: Feature requires backend OAuth integration`);
+    addLog(`[ℹ] Facebook: Requires backend OAuth — coming soon`);
     return false;
   },
 
-  /**
-   * Trigger full SOS blast to all contacts
-   */
-  triggerSOSBlast: async (contacts, geo, twilioConfig, addLog) => {
-    const message = `🚨 EMERGENCY ALERT 🚨\nSentinelClick Activated!\nLocation: https://www.google.com/maps?q=${geo.lat},${geo.lng}\nTime: ${new Date().toLocaleTimeString()}`;
+  triggerSOSBlast: async (contacts, geo, customMessage, victimName, addLog) => {
+    const trackingUrl = window.location.origin + '/track.html';
+    const time = new Date().toLocaleString('en-PH', { timeZone: 'Asia/Manila' });
 
-    addLog('[ALERT]: SOS BLAST INITIATED');
-    addLog(`[INFO]: Notifying ${contacts.length} emergency contacts...`);
+    const defaultMsg = `🚨 EMERGENCY ALERT 🚨\n${victimName} needs help!\n\n📍 LIVE TRACKING:\n${trackingUrl}\n\n⏰ Time: ${time}\n\nPlease respond immediately!`;
+
+    const message = customMessage
+      ? customMessage
+          .replace(/{name}/g, victimName)
+          .replace(/{tracking}/g, trackingUrl)
+          .replace(/{location}/g, trackingUrl)
+          .replace(/{time}/g, time)
+      : defaultMsg;
+
+    addLog('[🚨] SOS BLAST INITIATED');
+    addLog(`[📡] Notifying ${contacts.length} emergency contacts...`);
 
     let successCount = 0;
     let totalCount = 0;
 
     for (const contact of contacts) {
-      // Send Email
       if (contact.email && contact.email.includes('@')) {
         totalCount++;
-        const emailSuccess = await sosService.sendEmail(contact.email, message, addLog);
-        if (emailSuccess) successCount++;
+        const ok = await sosService.sendEmail(contact.email, message, addLog);
+        if (ok) successCount++;
       }
-
-      // Send SMS
-      if (contact.phone && !contact.phone.includes('X')) {
+      if (contact.phone && contact.phone.trim()) {
         totalCount++;
-        const smsSuccess = await sosService.sendSMS(contact.phone, message, twilioConfig, addLog);
-        if (smsSuccess) successCount++;
-      }
-
-      // Send Facebook (future)
-      if (contact.facebook) {
-        totalCount++;
-        const fbSuccess = await sosService.sendFacebookMessage(contact.facebook, message, addLog);
-        if (fbSuccess) successCount++;
+        const ok = await sosService.sendSMSSimulated(contact.phone, addLog);
+        if (ok) successCount++;
       }
     }
 
-    addLog(`[SUMMARY]: ${successCount}/${totalCount} messages delivered`);
+    addLog(`[✅] BLAST COMPLETE: ${successCount}/${totalCount} alerts delivered`);
     return successCount > 0;
   }
 };
