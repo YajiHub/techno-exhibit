@@ -5,7 +5,7 @@ const MapView = ({ active, geo }) => (
     {active ? (
       <iframe 
         width="100%" height="100%" frameBorder="0" scrolling="no" title="Map"
-        src={`https://www.openstreetmap.org/export/embed.html?bbox=${geo.lng-0.01},${geo.lat-0.01},${geo.lng+0.01},${geo.lat+0.01}&layer=mapnik&marker=${geo.lat},${geo.lng}`}
+        src={`https://www.openstreetmap.org/export/embed.html?bbox=${geo.lng-0.0003},${geo.lat-0.0003},${geo.lng+0.0003},${geo.lat+0.0003}&layer=mapnik&marker=${geo.lat},${geo.lng}`}
         style={{ filter: 'invert(90%) hue-rotate(180deg) brightness(0.6)' }}
       />
     ) : (

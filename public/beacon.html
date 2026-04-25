@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>SentinelClick GPS Beacon</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #050505; color: white;
+      min-height: 100vh; display: flex;
+      flex-direction: column; align-items: center;
+      padding: 24px 16px;
+    }
+    h1 { font-size: 22px; font-weight: 900; letter-spacing: -0.5px; margin-bottom: 4px; }
+    h1 span { color: #f97316; }
+    .subtitle { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 24px; }
+
+    .status-card {
+      width: 100%; max-width: 360px;
+      background: #111; border: 2px solid #222;
+      border-radius: 20px; padding: 20px;
+      margin-bottom: 16px; text-align: center;
+    }
+    .status-dot {
+      width: 14px; height: 14px; border-radius: 50%;
+      background: #444; display: inline-block;
+      margin-right: 8px; vertical-align: middle;
+    }
+    .status-dot.green  { background: #22c55e; animation: pulse 1.5s infinite; }
+    .status-dot.red    { background: #ef4444; }
+    .status-dot.yellow { background: #facc15; animation: pulse 1s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    .status-label { font-size: 13px; font-weight: 700; vertical-align: middle; }
+    .coords { font-family: monospace; font-size: 13px; color: #f97316; margin-top: 10px; line-height: 1.8; }
+    .accuracy { font-size: 11px; color: #555; margin-top: 4px; }
+
+    .btn {
+      width: 100%; max-width: 360px;
+      padding: 16px; border-radius: 16px; border: none;
+      font-size: 14px; font-weight: 900;
+      text-transform: uppercase; letter-spacing: 1px;
+      cursor: pointer; transition: all 0.2s; margin-bottom: 12px;
+    }
+    .btn-start { background: linear-gradient(135deg, #f97316, #facc15); color: black; }
+    .btn-stop  { background: #1a1a1a; color: #ef4444; border: 2px solid #ef4444; }
+    .btn:active   { transform: scale(0.97); }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .stats {
+      width: 100%; max-width: 360px;
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 8px; margin-bottom: 14px;
+    }
+    .stat-box {
+      background: #111; border: 1px solid #222;
+      border-radius: 10px; padding: 10px; text-align: center;
+    }
+    .stat-num   { font-size: 22px; font-weight: 900; color: #f97316; }
+    .stat-label { font-size: 9px; color: #444; text-transform: uppercase; margin-top: 2px; }
+
+    .log {
+      width: 100%; max-width: 360px;
+      background: #0a0a0a; border: 1px solid #1a1a1a;
+      border-radius: 12px; padding: 10px;
+      height: 160px; overflow-y: auto;
+      font-family: monospace; font-size: 11px; color: #555;
+      margin-bottom: 14px;
+    }
+    .log-entry      { margin-bottom: 3px; line-height: 1.5; }
+    .log-entry.ok   { color: #22c55e; }
+    .log-entry.err  { color: #ef4444; }
+    .log-entry.info { color: #f97316; }
+    .log-entry.warn { color: #facc15; }
+
+    .hz-badge {
+      display: inline-block; margin-top: 8px;
+      font-size: 11px; padding: 4px 12px; border-radius: 20px;
+      font-family: monospace; font-weight: 700;
+      background: #0d1a0d; color: #22c55e;
+      border: 1px solid #22c55e44;
+    }
+  </style>
+</head>
+<body>
+  <h1>SENTINEL<span>CLICK</span></h1>
+  <p class="subtitle">GPS Beacon — Phone Mode</p>
+
+  <div class="status-card">
+    <div>
+      <span class="status-dot" id="statusDot"></span>
+      <span class="status-label" id="statusLabel">Idle — tap Start</span>
+    </div>
+    <div class="coords" id="coordsDisplay">LAT: —<br>LNG: —</div>
+    <div class="accuracy" id="accuracyDisplay">Accuracy: —</div>
+    <div class="hz-badge" id="hzBadge">⚡ Realtime — no rate limits</div>
+  </div>
+
+  <button class="btn btn-start" id="startBtn" onclick="startBeacon()">Start GPS Beacon</button>
+  <button class="btn btn-stop"  id="stopBtn"  onclick="stopBeacon()" disabled>Stop Beacon</button>
+
+  <div class="stats">
+    <div class="stat-box"><div class="stat-num" id="statSent">0</div><div class="stat-label">Broadcasts</div></div>
+    <div class="stat-box"><div class="stat-num" id="statHz">—</div><div class="stat-label">Seconds/update</div></div>
+  </div>
+
+  <div class="log" id="logBox">
+    <div class="log-entry info">Waiting to start...</div>
+  </div>
+
+  <script>
+    // ── Supabase config (public anon key — safe to expose in frontend) ────────
+    // This uses a shared demo project. For production make your own at supabase.com
+    // Free tier: unlimited realtime broadcasts, no rate limits
+    const SUPABASE_URL      = 'https://dpksnvcfsqfkwgtdpbws.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwa3NudmNmc3Fma3dndGRwYndzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxMDIzMzYsImV4cCI6MjA5MjY3ODMzNn0.X1ymhR4OgUO-fvjYqJF0VfbqGd8Ul2F680PWsqrU74o';
+    const CHANNEL_NAME      = 'sentinel-gps';
+    // ─────────────────────────────────────────────────────────────────────────
+
+    // NOTE: The above Supabase project is a placeholder.
+    // Follow the ONE-TIME SETUP instructions in the log below to create your own
+    // free Supabase project and replace the URL + key. Takes 2 minutes.
+
+    let supabase    = null;
+    let channel     = null;
+    let watchId     = null;
+    let statSent    = 0;
+    let lastSendTs  = 0;
+    let pendingCoords = null;
+    let sendLoopId  = null;
+
+    // How often to broadcast — every 2 seconds, no rate limit issues
+    const SEND_INTERVAL = 2000;
+
+    function addLog(msg, type = '') {
+      const box   = document.getElementById('logBox');
+      const entry = document.createElement('div');
+      entry.className = 'log-entry ' + type;
+      entry.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+      box.insertBefore(entry, box.firstChild);
+      if (box.children.length > 60) box.removeChild(box.lastChild);
+    }
+
+    function setStatus(label, dotClass) {
+      document.getElementById('statusLabel').textContent = label;
+      document.getElementById('statusDot').className = 'status-dot ' + dotClass;
+    }
+
+    async function broadcastGPS() {
+      if (!channel || !pendingCoords) return;
+      const { lat, lng, accuracy } = pendingCoords;
+      const now = Date.now();
+
+      try {
+        await channel.send({
+          type: 'broadcast',
+          event: 'gps',
+          payload: { lat, lng, accuracy, ts: now }
+        });
+
+        const elapsed = lastSendTs ? ((now - lastSendTs) / 1000).toFixed(1) : '—';
+        lastSendTs = now;
+        statSent++;
+        document.getElementById('statSent').textContent = statSent;
+        document.getElementById('statHz').textContent   = elapsed + 's';
+        addLog(`✓ ${lat.toFixed(5)}, ${lng.toFixed(5)} (±${Math.round(accuracy)}m)`, 'ok');
+      } catch (err) {
+        addLog(`Broadcast error: ${err.message}`, 'err');
+      }
+    }
+
+    function onPosition(pos) {
+      const { latitude: lat, longitude: lng, accuracy } = pos.coords;
+      pendingCoords = { lat, lng, accuracy };
+      document.getElementById('coordsDisplay').innerHTML =
+        `LAT: ${lat.toFixed(6)}<br>LNG: ${lng.toFixed(6)}`;
+      document.getElementById('accuracyDisplay').textContent =
+        `Accuracy: ±${Math.round(accuracy)}m`;
+      if (accuracy > 50) setStatus('Weak GPS — move near window', 'yellow');
+      else setStatus('GPS locked — broadcasting ⚡', 'green');
+    }
+
+    function onGPSError(err) {
+      const msgs = { 1: 'Permission denied', 2: 'GPS unavailable', 3: 'GPS timeout — retrying...' };
+      const msg  = msgs[err.code] || err.message;
+      if (err.code !== 3) setStatus(msg, 'red');
+      else setStatus('GPS weak — retrying...', 'yellow');
+      addLog(`GPS: ${msg}`, err.code === 3 ? 'warn' : 'err');
+    }
+
+    async function startBeacon() {
+      if (!navigator.geolocation) { addLog('Geolocation not supported', 'err'); return; }
+
+      document.getElementById('startBtn').disabled   = true;
+      document.getElementById('stopBtn').disabled    = false;
+      setStatus('Connecting to Supabase...', 'yellow');
+
+      try {
+        // Init Supabase client
+        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Join broadcast channel
+        channel = supabase.channel(CHANNEL_NAME, {
+          config: { broadcast: { self: false } }
+        });
+        await channel.subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            addLog(`Connected to channel: ${CHANNEL_NAME}`, 'info');
+            setStatus('Acquiring GPS...', 'yellow');
+          } else if (status === 'CHANNEL_ERROR') {
+            addLog('Channel error — check Supabase keys', 'err');
+            setStatus('Connection failed', 'red');
+          }
+        });
+
+        // Start GPS watch
+        watchId = navigator.geolocation.watchPosition(onPosition, onGPSError, {
+          enableHighAccuracy: true,
+          maximumAge: 3000,
+          timeout: 20000
+        });
+
+        // Broadcast loop — every 2 seconds
+        sendLoopId = setInterval(broadcastGPS, SEND_INTERVAL);
+        addLog(`Broadcasting every ${SEND_INTERVAL/1000}s — no rate limits!`, 'info');
+
+      } catch (err) {
+        addLog(`Setup error: ${err.message}`, 'err');
+        setStatus('Error — see log', 'red');
+        document.getElementById('startBtn').disabled = false;
+      }
+    }
+
+    function stopBeacon() {
+      clearInterval(sendLoopId);
+      if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
+      if (channel)          { channel.unsubscribe(); channel = null; }
+      document.getElementById('startBtn').disabled = false;
+      document.getElementById('stopBtn').disabled  = true;
+      setStatus('Beacon stopped', '');
+      addLog('Beacon stopped', 'info');
+    }
+
+    // Show setup instructions in log on load
+    setTimeout(() => {
+      addLog('── SETUP (2 min, one time only) ──────────', 'warn');
+      addLog('4. Paste URL + anon key into beacon.html', 'warn');
+      addLog('3. Copy "Project URL" and "anon public" key', 'warn');
+      addLog('2. Go to Settings → API in your project', 'warn');
+      addLog('1. Create free project at supabase.com', 'warn');
+      addLog('──────────────────────────────────────────', 'warn');
+    }, 500);
+  </script>
+</body>
+</html>
