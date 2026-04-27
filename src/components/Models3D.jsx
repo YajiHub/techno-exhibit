@@ -6,12 +6,12 @@ import { useFrame } from '@react-three/fiber';
 const SlideSwitch = ({ position, rotation, isActive, toggle }) => (
   <group position={position} rotation={rotation}
     onClick={(e) => { e.stopPropagation(); toggle(); }}>
-    <RoundedBox args={[0.42, 0.18, 0.08]} radius={0.09}>
-      <meshStandardMaterial color={isActive ? '#22c55e' : '#3f3f46'} roughness={0.5} />
+    <RoundedBox args={[0.4, 0.18, 0.08]} radius={0.09}>
+      <meshStandardMaterial color={isActive ? '#93b9c8' : '#3f3f46'} roughness={0.5} />
     </RoundedBox>
     <RoundedBox args={[0.16, 0.13, 0.12]} radius={0.05}
       position={[isActive ? 0.11 : -0.11, 0, 0.05]}>
-      <meshStandardMaterial color="#e4e4e7" roughness={0.2} metalness={0.2} />
+      <meshStandardMaterial color="#797990" roughness={0.2} metalness={0.2} />
     </RoundedBox>
   </group>
 );
@@ -36,12 +36,44 @@ const SOSButton = ({ position, rotation, trigger }) => {
 
   return (
     <group position={position} rotation={rotation} onClick={handleClick}>
-      <Cylinder args={[0.215, 0.215, 0.045, 32]} position={[0, 0, -0.005]}>
+      <Cylinder args={[0.215, 0.215, 0.045, 32]} position={[0, 0, 0.02]}>
         <meshStandardMaterial color="#0a0a0a" roughness={0.9} />
       </Cylinder>
       <Cylinder ref={btnRef} args={[0.155, 0.155, 0.085, 32]}
         position={[0, 0, pressed ? 0.008 : 0.025]}>
-        <meshStandardMaterial color="#5b4b4b" emissive="#ff2200"
+        <meshStandardMaterial color="#ba0505" emissive="#2a0b06"
+          emissiveIntensity={0.25} roughness={0.25} metalness={0.3} />
+      </Cylinder>
+    </group>
+  );
+};
+
+// ── : Pendant Button ────────────────────────────────────────────────────
+const PendantButton = ({ position, rotation, trigger }) => {
+  const btnRef = useRef();
+  const [pressed, setPressed] = useState(false);
+
+  useFrame(({ clock }) => {
+    if (btnRef.current)
+      btnRef.current.material.emissiveIntensity =
+        0.25 + Math.sin(clock.elapsedTime * 2.5) * 0.18;
+  });
+
+  const handleClick = (e) => {
+    e.stopPropagation();
+    setPressed(true);
+    trigger();
+    setTimeout(() => setPressed(false), 250);
+  };
+
+  return (
+    <group position={position} rotation={rotation} onClick={handleClick}>
+      <Cylinder args={[0.215, 0.37, 0.045, 32]} position={[0, 0, 0.02]}>
+        <meshStandardMaterial color="#4a3b3b" roughness={0.9} />
+      </Cylinder>
+      <Cylinder ref={btnRef} args={[0.155, 0.35, 0.085, 32]}
+        position={[0, 0, pressed ? 0.008 : 0.025]}>
+        <meshStandardMaterial color="#8f8383" emissive="#345d5e"
           emissiveIntensity={0.25} roughness={0.25} metalness={0.3} />
       </Cylinder>
     </group>
@@ -67,17 +99,17 @@ export const ModelKeychain = ({ trigger, tracking, toggleTrack }) => (
       </RoundedBox>
 
       {/* Top chain bail — gold loop */}
-      <Torus args={[0.15, 0.013, 16, 32]} position={[0, 1.25, 0]}>
+      <Torus args={[0.15, 0.013, 16, 32]} rotation={[-0.15, 0.1, Math.PI / 2]} position={[0, 1.25, 0]}>
         <meshStandardMaterial color="#fff7dd" metalness={1} roughness={0.1} />
       </Torus>
 
-      <Torus args={[0.1, 0.012, 16, 32]} position={[0, 1, 0]}>
+      <Torus args={[0.1, 0.012, 16, 32]} rotation={[0.2, 0, Math.PI / 2]} position={[0, 1, 0]}>
         <meshStandardMaterial color="#fff7dd" metalness={1} roughness={0.1} />
       </Torus>
-      <Torus args={[0.1, 0.012, 16, 32]} position={[0, 0.8, 0]}>
+      <Torus args={[0.1, 0.012, 16, 32]} rotation={[-0.17, 0, Math.PI / 2]} position={[0, 0.8, 0]}>
         <meshStandardMaterial color="#fff7dd" metalness={1} roughness={0.1} />
       </Torus>
-      <Torus args={[0.1, 0.012, 16, 32]} position={[0, 0.6, 0]}>
+      <Torus args={[0.1, 0.012, 16, 32]} rotation={[0.18, 0, Math.PI / 2]} position={[0, 0.6, 0]}>
         <meshStandardMaterial color="#fff7dd" metalness={1} roughness={0.1} />
       </Torus>
     
@@ -202,10 +234,10 @@ export const ModelPendant = ({ trigger, tracking, toggleTrack }) => (
       </Torus>
 
       {/* SOS BUTTON on back (z-negative) — rotated 180 on Y to face backwards */}
-      <SOSButton position={[0, 0.2, -0.3]} rotation={[Math.PI / 2, Math.PI, 0]} trigger={trigger} />
+      <PendantButton position={[0, 0.2, -0.3]} rotation={[Math.PI / 2, Math.PI, 0]} trigger={trigger} />
       
       {/* Slide switch on back (z-negative) — rotated 180 on Y to face backwards */}
-      <SlideSwitch position={[0, -0.2, -0.3]} rotation={[Math.PI / 89, Math.PI, 0]} isActive={tracking} toggle={toggleTrack} />
+      <SlideSwitch position={[0, -0.37, -0.3]} rotation={[Math.PI / 89, Math.PI, 0]} isActive={tracking} toggle={toggleTrack} />
     </group>
   </Float>
 );
