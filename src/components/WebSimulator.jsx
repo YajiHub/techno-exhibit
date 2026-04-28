@@ -1,22 +1,34 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 // ±0.0003 degrees ≈ 30 meters — tight enough to show walking movement
 const MAP_DELTA = 0.0003;
 
-const MapView = ({ active, geo }) => (
-  <div className={`w-full h-full bg-[#0a0a0a] relative overflow-hidden transition-all duration-500 ${active ? 'opacity-100' : 'opacity-40'}`}>
-    {active ? (
-      <iframe
-        key={`${geo.lat.toFixed(5)}-${geo.lng.toFixed(5)}`}
-        width="100%" height="100%" frameBorder="0" scrolling="no" title="Map"
-        src={`https://www.openstreetmap.org/export/embed.html?bbox=${geo.lng - MAP_DELTA},${geo.lat - MAP_DELTA},${geo.lng + MAP_DELTA},${geo.lat + MAP_DELTA}&layer=mapnik&marker=${geo.lat},${geo.lng}`}
-        style={{ filter: 'invert(90%) hue-rotate(180deg) brightness(0.6)' }}
-      />
-    ) : (
-      <div className="absolute inset-0 flex items-center justify-center text-[12px] font-mono text-gray-700 animate-pulse">AWAITING_IOT_HANDSHAKE...</div>
-    )}
-  </div>
-);
+const MapView = ({ active, geo }) => {
+  const [iframeSrc, setIframeSrc] = useState('');
+
+  useEffect(() => {
+    // Only set the map URL once when it becomes active.
+    if (active && !iframeSrc) {
+      setIframeSrc(
+        `https://www.openstreetmap.org/export/embed.html?bbox=${geo.lng - MAP_DELTA},${geo.lat - MAP_DELTA},${geo.lng + MAP_DELTA},${geo.lat + MAP_DELTA}&layer=mapnik&marker=${geo.lat},${geo.lng}`
+      );
+    }
+  }, [active, geo, iframeSrc]);
+
+  return (
+    <div className={`w-full h-full bg-[#0a0a0a] relative overflow-hidden transition-all duration-500 ${active ? 'opacity-100' : 'opacity-40'}`}>
+      {active ? (
+        <iframe
+          width="100%" height="100%" frameBorder="0" scrolling="no" title="Map"
+          src={iframeSrc}
+          style={{ filter: 'invert(90%) hue-rotate(180deg) brightness(0.6)' }}
+        />
+      ) : (
+        <div className="absolute inset-0 flex items-center justify-center text-[12px] font-mono text-gray-700 animate-pulse">AWAITING_IOT_HANDSHAKE...</div>
+      )}
+    </div>
+  );
+};
 
 export const WebSimulator = ({ isSOS, isTrack, geo, logs, contacts, onDeleteContact }) => {
   const [expandedContact, setExpandedContact] = useState(null);
