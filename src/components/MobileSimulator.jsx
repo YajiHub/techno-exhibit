@@ -82,6 +82,17 @@ export const MobileSimulator = ({
         <span className="text-[9px] opacity-60">📶</span>
       </div>
 
+      {/* Floating SOS Alert Overlay for Mobile */}
+      {isSOS && (
+        <div className="absolute top-20 left-4 right-4 bg-red-600 border-2 border-red-400 rounded-2xl p-4 shadow-[0_0_30px_rgba(220,38,38,0.8)] z-50 flex items-center gap-4 animate-pulse">
+          <div className="text-3xl animate-bounce">🚨</div>
+          <div className="flex flex-col">
+            <span className="text-white font-black text-[16px] uppercase tracking-wider">SOS Triggered!</span>
+            <span className="text-red-100 text-[11px] leading-tight mt-0.5">Device user needs help. Monitoring live location.</span>
+          </div>
+        </div>
+      )}
+
       {/* Content */}
       <div className="flex-1 bg-zinc-950 overflow-y-auto pb-20">
         {tab === 'map' && (

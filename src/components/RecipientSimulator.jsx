@@ -200,13 +200,6 @@ export const RecipientSimulator = ({ isSOS, geo, contacts, customMessage, victim
           >
             ✉️ Email
           </button>
-          <button
-            onClick={() => setActiveTab('map')}
-            className={`flex-1 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all
-              ${activeTab === 'map' ? 'bg-zinc-700 text-white' : 'text-zinc-500 hover:text-zinc-400'}`}
-          >
-            🗺️ Live Map
-          </button>
         </div>
       </div>
 
@@ -229,28 +222,6 @@ export const RecipientSimulator = ({ isSOS, geo, contacts, customMessage, victim
             victimName={victimName}
           />
         )}
-        {activeTab === 'map' && (
-          <div className="h-full flex flex-col gap-2">
-            <div className="bg-zinc-900 rounded-xl p-2 border border-zinc-800 flex-shrink-0">
-              <div className="text-[9px] text-zinc-500 uppercase tracking-wider">Public tracking page — shared via SOS link</div>
-              <div className="text-[10px] text-orange-400 font-mono mt-0.5 truncate">
-                https://sentinel.click/track/{geo.lat.toFixed(3)},{geo.lng.toFixed(3)}
-              </div>
-            </div>
-            <div className="flex-1 rounded-xl overflow-hidden border border-zinc-700">
-              <iframe
-                key={`recipient-${geo.lat.toFixed(5)}-${geo.lng.toFixed(5)}`}
-                width="100%" height="100%" frameBorder="0" scrolling="no" title="Recipient Map"
-                src={`https://www.openstreetmap.org/export/embed.html?bbox=${geo.lng - MAP_DELTA},${geo.lat - MAP_DELTA},${geo.lng + MAP_DELTA},${geo.lat + MAP_DELTA}&layer=mapnik&marker=${geo.lat},${geo.lng}`}
-                style={{ filter: 'invert(90%) hue-rotate(180deg) brightness(0.65)' }}
-              />
-            </div>
-            <div className="bg-red-900/20 border border-red-700/30 rounded-xl p-2 flex-shrink-0">
-              <div className="text-[9px] text-red-400 font-bold">🔴 LIVE — Updates every 2s</div>
-              <div className="text-[9px] text-zinc-500 mt-0.5">GPS coords: {geo.lat.toFixed(5)}, {geo.lng.toFixed(5)}</div>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Recipient info strip */}
@@ -270,5 +241,3 @@ export const RecipientSimulator = ({ isSOS, geo, contacts, customMessage, victim
     </div>
   );
 };
-
-const MAP_DELTA = 0.0003;

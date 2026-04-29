@@ -34,10 +34,10 @@ export const WebSimulator = ({ isSOS, isTrack, geo, logs, contacts, onDeleteCont
   const [expandedContact, setExpandedContact] = useState(null);
 
   return (
-    <div className={`w-full h-full bg-[#0a0a0a] border-2 ${isSOS ? 'border-red-600 shadow-[0_0_60px_rgba(255,0,0,0.2)]' : 'border-gray-700'} rounded-2xl flex flex-col shadow-2xl overflow-hidden`}>
+    <div className={`w-full h-full bg-[#0a0a0a] border-2 ${isSOS ? 'border-red-600 shadow-[0_0_60px_rgba(255,0,0,0.2)]' : 'border-gray-700'} rounded-2xl flex flex-col shadow-2xl overflow-hidden relative`}>
 
       {/* HEADER */}
-      <div className="h-16 border-b-2 border-gray-800 flex items-center px-8 justify-between bg-gradient-to-r from-black to-gray-900">
+      <div className="h-16 border-b-2 border-gray-800 flex items-center px-8 justify-between bg-gradient-to-r from-black to-gray-900 flex-shrink-0">
         <div className="flex items-center gap-4">
           <div className={`w-3 h-3 rounded-full ${isSOS ? 'bg-red-500 animate-pulse' : 'bg-brand'} shadow-lg`}></div>
           <div>
@@ -52,16 +52,27 @@ export const WebSimulator = ({ isSOS, isTrack, geo, logs, contacts, onDeleteCont
         </div>
       </div>
 
+      {/* Floating SOS Alert Overlay for Web */}
+      {isSOS && (
+        <div className="absolute top-20 left-1/2 -translate-x-1/2 bg-red-600/95 backdrop-blur-md border-2 border-red-400 rounded-2xl px-8 py-4 shadow-[0_0_50px_rgba(220,38,38,0.7)] z-50 flex items-center gap-5 animate-pulse">
+          <div className="text-5xl animate-bounce">🚨</div>
+          <div className="flex flex-col">
+            <span className="text-white font-black text-2xl uppercase tracking-widest leading-none mb-1">EMERGENCY: SOS ACTIVATED</span>
+            <span className="text-red-100 text-sm font-mono opacity-90">Device user has requested immediate assistance. Live tracking active.</span>
+          </div>
+        </div>
+      )}
+
       {/* MAIN CONTENT */}
       <div className="flex-1 flex flex-col gap-3 p-4 min-h-0 overflow-hidden">
 
         {/* TOP — BIG MAP */}
-        <div className="h-1/2 bg-black border-2 border-gray-700 rounded-xl overflow-hidden shadow-xl hover:border-brand/30 transition">
+        <div className="flex-1 bg-black border-2 border-gray-700 rounded-xl overflow-hidden shadow-xl hover:border-brand/30 transition min-h-0">
           <MapView active={isSOS || isTrack} geo={geo} />
         </div>
 
         {/* MIDDLE — CONTACTS */}
-        <div className="h-1/4 bg-gradient-to-r from-gray-900 to-black border-2 border-gray-700 rounded-xl p-4 flex flex-col overflow-hidden shadow-lg hover:border-brand/30 transition">
+        <div className="h-[22%] bg-gradient-to-r from-gray-900 to-black border-2 border-gray-700 rounded-xl p-4 flex flex-col overflow-hidden shadow-lg hover:border-brand/30 transition flex-shrink-0">
           <div className="text-xs font-black uppercase tracking-widest text-brand mb-2">🎯 Emergency Targets ({contacts.length})</div>
           <div className="flex-1 overflow-x-auto flex gap-3 pr-2">
             {contacts.length === 0 ? (
@@ -98,7 +109,7 @@ export const WebSimulator = ({ isSOS, isTrack, geo, logs, contacts, onDeleteCont
         </div>
 
         {/* BOTTOM — EVENT LOG */}
-        <div className="h-1/4 bg-gradient-to-r from-gray-900 to-black border-2 border-gray-700 rounded-xl p-4 flex flex-col overflow-hidden shadow-lg hover:border-brand/30 transition">
+        <div className="h-[22%] bg-gradient-to-r from-gray-900 to-black border-2 border-gray-700 rounded-xl p-4 flex flex-col overflow-hidden shadow-lg hover:border-brand/30 transition flex-shrink-0">
           <div className="text-xs font-black uppercase tracking-widest text-brand mb-2">📡 Kernel Event Stream</div>
           <div className="flex-1 overflow-y-auto overflow-x-hidden font-mono text-[10px] space-y-1 pr-2">
             {logs.length === 0 ? (
