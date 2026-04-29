@@ -11,44 +11,41 @@ const formatPhoneNumber = (phone) => {
   return cleaned;
 };
 
-// --- ANDROID SMS GATEWAY FUNCTION (CLOUD INTEGRATION) ---
+// --- TEXTBEE SMS GATEWAY FUNCTION ---
 const sendActualSMS = async (phoneNumber, messageText, addLog) => {
   try {
     const internationalNumber = formatPhoneNumber(phoneNumber);
-    addLog(`[SMS] Routing to ${internationalNumber} via Default SIM (Cloud)...`);
+    addLog(`[SMS] Routing to ${internationalNumber} via TextBee...`);
     
-    // Your exact Cloud Login and Password
-    const cloudLogin = "FJKFOE"; 
-    const cloudPassword = "b_shfabqdivhyi";
-    
-    const credentials = btoa(`${cloudLogin}:${cloudPassword}`); 
-    
-    // We use the Vite proxy '/capcom-cloud' to bypass the browser's CORS block
-    const response = await fetch("/capcom-cloud/3rdparty/v1/message", {
+    const API_KEY = "02523ced-55f2-4861-867d-7239be353976";
+    const DEVICE_ID = "69f18004b5cd3ce4c7957231"; 
+
+    // TextBee requires the body to use 'receivers' (array) and 'smsBody'
+    const response = await fetch(`https://api.textbee.dev/api/v1/gateway/devices/${DEVICE_ID}/send-sms`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Basic ${credentials}` 
+        "x-api-key": API_KEY
       },
       body: JSON.stringify({
-        message: messageText,
-        phoneNumbers: [internationalNumber]
-        // Removed simNumber entirely so the phone uses its default SMS SIM
+        receivers: [internationalNumber],
+        smsBody: messageText,
       })
     });
 
     if (response.ok) {
-      addLog(`[SMS] ✓ Successfully pushed to phone for ${internationalNumber}`);
+      addLog(`[SMS] ✓ Queued in TextBee for ${internationalNumber}`);
     } else {
-      addLog(`[SMS] ❌ Cloud Gateway rejected SMS to ${internationalNumber}`);
-      console.error("SMS Cloud Error Details:", await response.text());
+      const errorData = await response.json();
+      addLog(`[SMS] ❌ TextBee Error: ${errorData.message || 'Check Device ID/API Key'}`);
     }
   } catch (error) {
-    console.error('Android Cloud Gateway Error:', error);
-    addLog(`[SMS] ❌ Network error reaching cloud gateway`);
+    console.error('TextBee Network Error:', error);
+    addLog(`[SMS] ❌ Network error reaching TextBee API`);
   }
 };
- export const sosService = {
+
+export const sosService = {
   triggerSOSBlast: async (contacts, geo, customMessage, victimName, addLog) => {
     addLog('[KERNEL] Processing SOS blast...');
 
@@ -74,28 +71,14 @@ const sendActualSMS = async (phoneNumber, messageText, addLog) => {
     }
 
     // ----------------------------------------------------
-    // SEQUENCE 1: SMS BLAST (Via Capcom6 Cloud Proxy)
+    // SEQUENCE 1: SMS BLAST (Via TextBee)
     // ----------------------------------------------------
     if (phoneContacts.length > 0) {
       addLog(`[SMS] Initiating blast to ${phoneContacts.length} phone recipient(s)...`);
       
       for (const contact of phoneContacts) {
         await sendActualSMS(contact.phone, activeMessage, addLog);
-        await delay(2000); 
-      }
-    } else {
-      addLog('[SMS] No phone numbers found. Skipping SMS blast.');
-    }
-
-    // ----------------------------------------------------
-    // SEQUENCE 1: SMS BLAST (Via Capcom6 Cloud Proxy)
-    // ----------------------------------------------------
-    if (phoneContacts.length > 0) {
-      addLog(`[SMS] Initiating blast to ${phoneContacts.length} phone recipient(s)...`);
-      
-      for (const contact of phoneContacts) {
-        await sendActualSMS(contact.phone, activeMessage, addLog);
-        await delay(2000); 
+        await delay(200); 
       }
     } else {
       addLog('[SMS] No phone numbers found. Skipping SMS blast.');
@@ -123,7 +106,7 @@ const sendActualSMS = async (phoneNumber, messageText, addLog) => {
               longitude: geo.lng.toFixed(5),
               time: time
             },
-            '3oxHlBVChJQp1iNra' // Reverted to the working string format
+            '3oxHlBVChJQp1iNra' // Public Key as string (Working format)
           );
           
           addLog(`[EMAIL] ✓ Successfully delivered to ${contact.email}`);

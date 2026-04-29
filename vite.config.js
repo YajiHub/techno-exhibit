@@ -6,16 +6,6 @@ import basicSsl from '@vitejs/plugin-basic-ssl'
 export default defineConfig({
   plugins: [
     react(),
-    basicSsl() 
+    basicSsl() // Keep SSL for secure EmailJS and Supabase connections
   ],
-  server: {
-    // This proxy bypasses the strict Cloud CORS security block
-    proxy: {
-      '/capcom-cloud': {
-        target: 'https://api.sms-gate.app',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/capcom-cloud/, '')
-      }
-    }
-  }
 })
