@@ -169,18 +169,20 @@ export default function App() {
             )}
             {isSOS && (
               <button
-                onClick={() => { setIsSOS(false); localStorage.setItem('sentinel_sos_active', 'false'); addLog('[\u2713] SOS cleared by operator'); }}
+                onClick={handleResolveSOS}
                 className="text-[9px] font-black bg-zinc-800 hover:bg-zinc-700 border border-zinc-600 px-3 py-1 rounded-full transition"
               >
                 ✓ Resolve
               </button>
-            )}            <button
+            )}            
+            <button
               onClick={() => setRecipientCollapsed(!recipientCollapsed)}
               className="text-[9px] font-black bg-zinc-800 hover:bg-zinc-700 border border-zinc-600 px-3 py-1 rounded-full transition"
               title={recipientCollapsed ? 'Show Recipient View' : 'Hide Recipient View'}
             >
               {recipientCollapsed ? '📬 Show' : '📪 Hide'}
-            </button>            <div className="text-[9px] text-zinc-600 font-mono">
+            </button>            
+            <div className="text-[9px] text-zinc-600 font-mono">
               {geo.lat.toFixed(4)}, {geo.lng.toFixed(4)}
             </div>
           </div>
@@ -230,11 +232,13 @@ export default function App() {
                 customMessage={customMessage}
                 onUpdateMessage={setCustomMessage}
                 victimName={victimName}
+                onResolve={handleResolveSOS}
               />
             ) : (
               <WebSimulator
                 isSOS={isSOS} isTrack={isTrack} geo={geo} logs={logs}
                 contacts={contacts} onDeleteContact={handleDeleteContact}
+                onResolve={handleResolveSOS}
               />
             )}
           </div>

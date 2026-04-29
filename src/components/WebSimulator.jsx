@@ -30,8 +30,9 @@ const MapView = ({ active, geo }) => {
   );
 };
 
-export const WebSimulator = ({ isSOS, isTrack, geo, logs, contacts, onDeleteContact }) => {
+export const WebSimulator = ({ isSOS, isTrack, geo, logs, contacts, onDeleteContact, onResolve }) => {
   const [expandedContact, setExpandedContact] = useState(null);
+  const batteryLevel = 86; // Mock data from IoT
 
   return (
     <div className={`w-full h-full bg-[#0a0a0a] border-2 ${isSOS ? 'border-red-600 shadow-[0_0_60px_rgba(255,0,0,0.2)]' : 'border-gray-700'} rounded-2xl flex flex-col shadow-2xl overflow-hidden relative`}>
@@ -45,6 +46,21 @@ export const WebSimulator = ({ isSOS, isTrack, geo, logs, contacts, onDeleteCont
             <span className="text-xs text-gray-500 ml-3">REAL-TIME ALERT SYSTEM</span>
           </div>
         </div>
+        
+        {/* Device Health Telemetry */}
+        <div className="flex gap-6 font-mono text-[12px] text-gray-300 bg-black/50 px-6 py-2 rounded-xl border border-gray-700 items-center">
+          <div className="flex items-center gap-2">
+            <span className="text-gray-500 text-[10px]">BATTERY</span>
+            <span className="text-green-400 font-bold">{batteryLevel}%</span>
+          </div>
+          <div className="border-l border-gray-700 h-4"></div>
+          <div className="flex items-center gap-2">
+            <span className="text-gray-500 text-[10px]">SIGNAL</span>
+            <span className="text-blue-400 font-bold">LTE-M</span>
+          </div>
+        </div>
+
+        {/* Coordinates */}
         <div className="flex gap-6 font-mono text-[12px] text-brand bg-black/50 px-6 py-2 rounded-xl border border-gray-700">
           <div className="flex flex-col"><span className="text-gray-500 text-[10px]">LATITUDE</span>{geo.lat.toFixed(5)}</div>
           <div className="border-l border-gray-700"></div>
@@ -54,12 +70,20 @@ export const WebSimulator = ({ isSOS, isTrack, geo, logs, contacts, onDeleteCont
 
       {/* Floating SOS Alert Overlay for Web */}
       {isSOS && (
-        <div className="absolute top-20 left-1/2 -translate-x-1/2 bg-red-600/95 backdrop-blur-md border-2 border-red-400 rounded-2xl px-8 py-4 shadow-[0_0_50px_rgba(220,38,38,0.7)] z-50 flex items-center gap-5 animate-pulse">
-          <div className="text-5xl animate-bounce">🚨</div>
-          <div className="flex flex-col">
-            <span className="text-white font-black text-2xl uppercase tracking-widest leading-none mb-1">EMERGENCY: SOS ACTIVATED</span>
-            <span className="text-red-100 text-sm font-mono opacity-90">Device user has requested immediate assistance. Live tracking active.</span>
+        <div className="absolute top-20 left-1/2 -translate-x-1/2 w-3/4 max-w-2xl bg-red-600/95 backdrop-blur-md border-2 border-red-400 rounded-2xl px-8 py-5 shadow-[0_0_50px_rgba(220,38,38,0.7)] z-50 flex items-center justify-between animate-pulse">
+          <div className="flex items-center gap-5">
+            <div className="text-5xl animate-bounce">🚨</div>
+            <div className="flex flex-col">
+              <span className="text-white font-black text-2xl uppercase tracking-widest leading-none mb-1">EMERGENCY: SOS ACTIVATED</span>
+              <span className="text-red-100 text-sm font-mono opacity-90">Device user has requested immediate assistance. Live tracking active.</span>
+            </div>
           </div>
+          <button 
+            onClick={onResolve}
+            className="bg-green-500 hover:bg-green-400 text-black font-black py-3 px-6 rounded-xl uppercase tracking-wider transition shadow-lg border border-green-300 flex-shrink-0"
+          >
+            ✓ Resolve Incident
+          </button>
         </div>
       )}
 
@@ -116,7 +140,7 @@ export const WebSimulator = ({ isSOS, isTrack, geo, logs, contacts, onDeleteCont
               <div className="text-gray-600 text-center">Initializing system...</div>
             ) : (
               logs.map((l, i) => (
-                <div key={i} className="text-gray-400 leading-relaxed break-words hover:text-gray-300 transition">
+                <div key={i} className={`leading-relaxed break-words transition ${l.includes('RESOLVED') || l.includes('cleared') ? 'text-green-400' : 'text-gray-400 hover:text-gray-300'}`}>
                   <span className="text-gray-600">[{new Date().toLocaleTimeString()}]</span> {l}
                 </div>
               ))

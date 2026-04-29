@@ -35,12 +35,15 @@ export const MobileSimulator = ({
   isSOS, isTrack, geo, contacts,
   onAddContact, onDeleteContact,
   customMessage, onUpdateMessage,
-  victimName
+  victimName, onResolve
 }) => {
   const [tab, setTab] = useState('map');
   const [form, setForm] = useState({ name: '', phone: '', email: '' });
   const [showMsgEditor, setShowMsgEditor] = useState(false);
   const [msgDraft, setMsgDraft] = useState(customMessage || '');
+  const [simLowBattery, setSimLowBattery] = useState(false);
+
+  const batteryLevel = simLowBattery ? 12 : 86;
 
   const getPreviewMessage = () => {
     const trackingUrl = window.location.origin + '/track.html';
@@ -78,18 +81,42 @@ export const MobileSimulator = ({
       <div className={`pt-10 pb-3 px-5 text-center text-[11px] font-black uppercase tracking-widest flex items-center justify-between
         ${isSOS ? 'bg-red-700 text-white' : 'bg-zinc-900 text-orange-400'}`}>
         <span className="text-[9px] font-mono opacity-60">{new Date().toLocaleTimeString()}</span>
-        <span>{isSOS ? '🚨 SOS ACTIVE' : 'SentinelClick PH'}</span>
-        <span className="text-[9px] opacity-60">📶</span>
+        <span>{isSOS ? '🚨 SOS ACTIVE' : 'SentinelClick'}</span>
+        <div className="flex items-center gap-2">
+          <span className={`text-[10px] ${batteryLevel <= 15 ? 'text-red-400 animate-pulse' : 'text-green-400'}`}>
+            🔋 {batteryLevel}%
+          </span>
+          <span className="text-[9px] opacity-80" title="LTE-M Signal">📶 LTE</span>
+        </div>
       </div>
+
+      {/* Low Battery Push Notification Simulation */}
+      {batteryLevel <= 15 && !isSOS && (
+        <div className="absolute top-20 left-4 right-4 bg-zinc-800 border border-red-500/50 rounded-xl p-3 shadow-2xl z-40 flex items-start gap-3">
+          <div className="text-xl">🪫</div>
+          <div className="flex-1">
+            <div className="text-zinc-100 text-[11px] font-bold">Device Battery Critical</div>
+            <div className="text-zinc-400 text-[10px] leading-tight mt-0.5">SentinelClick is at {batteryLevel}%. Please recharge immediately to ensure emergency readiness.</div>
+          </div>
+        </div>
+      )}
 
       {/* Floating SOS Alert Overlay for Mobile */}
       {isSOS && (
-        <div className="absolute top-20 left-4 right-4 bg-red-600 border-2 border-red-400 rounded-2xl p-4 shadow-[0_0_30px_rgba(220,38,38,0.8)] z-50 flex items-center gap-4 animate-pulse">
-          <div className="text-3xl animate-bounce">🚨</div>
-          <div className="flex flex-col">
-            <span className="text-white font-black text-[16px] uppercase tracking-wider">SOS Triggered!</span>
-            <span className="text-red-100 text-[11px] leading-tight mt-0.5">Device user needs help. Monitoring live location.</span>
+        <div className="absolute top-20 left-4 right-4 bg-red-600 border-2 border-red-400 rounded-2xl p-4 shadow-[0_0_30px_rgba(220,38,38,0.8)] z-50 flex flex-col gap-3 animate-pulse">
+          <div className="flex items-center gap-4">
+            <div className="text-3xl animate-bounce">🚨</div>
+            <div className="flex flex-col">
+              <span className="text-white font-black text-[16px] uppercase tracking-wider">SOS Triggered!</span>
+              <span className="text-red-100 text-[11px] leading-tight mt-0.5">Device user needs help. Monitoring live location.</span>
+            </div>
           </div>
+          <button 
+            onClick={onResolve}
+            className="w-full bg-green-500 hover:bg-green-400 text-black font-black py-2 rounded-lg text-[11px] uppercase tracking-wider transition shadow-lg border border-green-300"
+          >
+            ✓ Mark as Resolved
+          </button>
         </div>
       )}
 
@@ -99,6 +126,17 @@ export const MobileSimulator = ({
           <div className="h-full min-h-[400px]">
             <MapView active={isSOS || isTrack} geo={geo} />
             <div className="p-4 space-y-3 border-t border-zinc-800">
+              
+              {/* Dev Tool: Simulate Low Battery */}
+              <div className="flex justify-end">
+                <button 
+                  onClick={() => setSimLowBattery(!simLowBattery)}
+                  className="text-[9px] text-zinc-500 hover:text-zinc-300 underline"
+                >
+                  [Dev] Toggle Low Battery Warning
+                </button>
+              </div>
+
               {/* Message config section */}
               <div className="bg-zinc-900 rounded-2xl border border-zinc-700 overflow-hidden">
                 <button
